@@ -13,6 +13,7 @@ import ProgressBar from "../../components/ProgressBar";
 import { useToast } from "../../components/useToast";
 import SidePanel from "../../components/SidePanel";
 import { useRevalidate } from "../../hooks/useRevalidate";
+import { useSettingsSync } from "../../hooks/useSettingsSync";
 import { isNotificationSupported, requestBrowserNotificationPermission } from "../../lib/browserNotifications";
 import {
   Loader2, Calendar, CalendarCheck, CalendarPlus, CheckCircle2, Check, Clock,
@@ -1409,6 +1410,28 @@ export function ClientSettingsPage() {
   const [sessions, setSessions] = useState(null);
   const [revokingSid, setRevokingSid] = useState("");
 
+  // Re-sync form fields from AuthContext whenever `user` changes.
+  // Without this, the form initialises once at mount and stays stale when the
+  // user navigates away and back after a successful save.
+  useSettingsSync(setForm, (u) => ({
+    name: u?.name || "",
+    phone: u?.phone || "",
+    jobTitle: u?.jobTitle || "",
+  }));
+  useSettingsSync(setSocials, (u) => ({
+    linkedin: u?.socials?.linkedin || "",
+    instagram: u?.socials?.instagram || "",
+    facebook: u?.socials?.facebook || "",
+    twitter: u?.socials?.twitter || "",
+  }));
+  useSettingsSync(setPrefs, (u) => ({
+    email: u?.preferences?.notifications?.email ?? true,
+    browser: u?.preferences?.notifications?.browser ?? false,
+    weeklyReports: u?.preferences?.notifications?.weeklyReports ?? true,
+    meetingReminders: u?.preferences?.notifications?.meetingReminders ?? true,
+    billingAlerts: u?.preferences?.notifications?.billingAlerts ?? false,
+  }));
+
   useEffect(() => {
     if (tab !== "Security" || !token) return;
     let alive = true;
@@ -1469,7 +1492,10 @@ export function ClientSettingsPage() {
         preferences: { notifications: prefs },
         socials
       }, token);
-      if (auth.updateUser) auth.updateUser(updated.user);
+      // Guard: the offline/demo fallback returns the raw body (not { user }),
+      // so updated.user may be undefined — only call updateUser when we have
+      // a real user object back from the server.
+      if (updated?.user) auth.updateUser(updated.user);
       setSuccess("Profile updated successfully.");
       setTimeout(() => setSuccess(""), 4000);
     } catch (err) {

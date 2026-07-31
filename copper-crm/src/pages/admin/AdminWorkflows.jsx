@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSettingsSync } from "../../hooks/useSettingsSync";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft, Building2, Calendar, ChevronRight, Circle, Edit3, Eye, EyeOff,
@@ -997,12 +998,26 @@ function SettingsSubPage({ title, description, icon: Icon, actions, children, sc
 // Settings > Profile — the admin's own details and password.
 export function SettingsProfilePage() {
   const { showToast } = useToast();
-  const { token } = useAuth();
-  const [profile, setProfile] = useState({ fullName: "", email: "", phone: "" });
+  const { token, user } = useAuth();
+  const [profile, setProfile] = useState({
+    fullName: user?.name || "",
+    email: user?.email || "",
+    phone: user?.phone || "",
+    title: user?.jobTitle || "",
+  });
   const [passwordForm, setPasswordForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  // Re-sync the profile form from AuthContext whenever the user object changes
+  // (e.g. after a successful save updates context, or after a re-visit).
+  const { syncToContext } = useSettingsSync(setProfile, (u) => ({
+    fullName: u?.name || "",
+    email: u?.email || "",
+    phone: u?.phone || "",
+    title: u?.jobTitle || "",
+  }));
 
   useEffect(() => {
     let alive = true;
@@ -1036,7 +1051,17 @@ export function SettingsProfilePage() {
 
     setSaving(true);
     try {
-      await apiPut("/api/client/profile", { name: profile.fullName, phone: profile.phone }, token);
+      // Use the admin-specific settings endpoint (not the client portal one)
+      const result = await apiPut("/api/admin/settings/profile", {
+        fullName: profile.fullName,
+        phone: profile.phone,
+        title: profile.title,
+      }, token);
+      // Immediately propagate the updated name/phone/jobTitle into AuthContext
+      // and localStorage so the rest of the app (sidebar, header, etc.) reflects
+      // the change without requiring a reload or re-login.
+      syncToContext(result.user);
+
       if (touched) {
         await apiPut("/api/client/change-password", { currentPassword: passwordForm.currentPassword, newPassword: passwordForm.newPassword }, token);
         setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });

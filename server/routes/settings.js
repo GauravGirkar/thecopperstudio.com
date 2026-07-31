@@ -71,6 +71,45 @@ router.put("/data-fields", async (req, res, next) => {
   }
 });
 
+// Updates the signed-in superadmin's own personal details.
+// Returns both the flattened `profile` shape (for the Settings form) and the
+// raw `user` fields so the frontend can immediately call `auth.updateUser()`.
+router.put("/profile", async (req, res, next) => {
+  try {
+    const { fullName, phone, title } = req.body;
+    const user = await User.findById(req.auth.sub);
+    if (!user) return res.status(404).json({ message: "Admin user not found." });
+
+    if (fullName !== undefined) user.name = String(fullName).trim();
+    if (phone !== undefined) user.phone = String(phone).trim();
+    if (title !== undefined) user.jobTitle = String(title).trim();
+    await user.save();
+
+    const profile = {
+      fullName: user.name,
+      email: user.email,
+      phone: user.phone || "",
+      title: user.jobTitle || "",
+    };
+    // Return the canonical `user` shape so the client can call auth.updateUser()
+    res.json({
+      profile,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone || "",
+        jobTitle: user.jobTitle || "",
+        role: user.role,
+        status: user.status,
+        preferences: user.preferences || {},
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.put("/workspace", async (req, res, next) => {
   try {
     const { publicUrl = "" } = req.body;
