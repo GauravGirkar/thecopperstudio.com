@@ -13,3 +13,4 @@ dist/
 .replit
 # Local dev mongod data/logs — accidentally committed and blew the Git LFS budget, breaking Render deploys.
 .mongodb/
+seedDeveloperRole.mjs

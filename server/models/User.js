@@ -8,7 +8,7 @@ const schema = new mongoose.Schema(
     phone: { type: String, trim: true, default: "" },
     company: { type: String, trim: true, default: "" },
     jobTitle: { type: String, trim: true, default: "" },
-    role: { type: String, enum: ["user", "superadmin"], default: "user" },
+    role: { type: String, enum: ["user", "developer", "superadmin"], default: "user" },
     passwordHash: { type: String, default: "" },
     status: { type: String, enum: ["invited", "active", "disabled"], default: "invited" },
     preferences: {

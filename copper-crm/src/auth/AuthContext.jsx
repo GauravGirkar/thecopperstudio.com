@@ -29,17 +29,25 @@ function makeDemoSession(role) {
     token: "demo-local-bypass-token",
     user: {
       id: "demo-" + role,
-      name: role === "superadmin" ? "Super Admin" : "Client User",
-      email: role === "superadmin" ? "admin@thecopperstudio.com" : "client@thecopperstudio.com",
+      name: role === "superadmin" ? "Super Admin" : role === "developer" ? "Developer" : "Client User",
+      email: role === "superadmin" ? "admin@thecopperstudio.com" : role === "developer" ? "developer@thecopperstudio.com" : "client@thecopperstudio.com",
       phone: "",
       company: "The Copper Studio",
-      jobTitle: role === "superadmin" ? "Super Admin" : "Client",
+      jobTitle: role === "superadmin" ? "Super Admin" : role === "developer" ? "Developer" : "Client",
       role,
       status: "active",
       preferences: {},
       _isDemo: true,
     },
   };
+}
+
+function inferDemoRoleFromEmail(email) {
+  const normalized = String(email || "").toLowerCase();
+  if (!normalized) return "superadmin";
+  if (normalized.includes("admin") || normalized.includes("superadmin")) return "superadmin";
+  if (normalized.includes("developer")) return "developer";
+  return "user";
 }
 
 export function AuthProvider({ children }) {
@@ -66,7 +74,7 @@ export function AuthProvider({ children }) {
         return nextSession;
       } catch (err) {
         if (isNetworkError(err)) {
-          const demoSession = makeDemoSession(credentials.role || "superadmin");
+          const demoSession = makeDemoSession(inferDemoRoleFromEmail(credentials.email));
           saveSession(demoSession);
           return demoSession;
         }

@@ -11,6 +11,7 @@ import { useIsMobile } from "./hooks/useIsMobile";
 // refresh only downloads the chunk for the page you're on, not the whole app.
 const AdminLayout = lazy(() => import("./layouts/AdminLayout"));
 const ClientLayout = lazy(() => import("./layouts/ClientLayout"));
+const DeveloperLayout = lazy(() => import("./layouts/DeveloperLayout"));
 
 const Companies = lazy(() => import("./pages/crm/Companies"));
 const CompanyDetail = lazy(() => import("./pages/crm/CompanyDetail"));
@@ -34,6 +35,9 @@ const ClientPurchasesPage = lazy(() => import("./pages/client/ClientPages").then
 const ClientSettingsPage = lazy(() => import("./pages/client/ClientPages").then((m) => ({ default: m.ClientSettingsPage })));
 const ClientSupportPage = lazy(() => import("./pages/client/ClientPages").then((m) => ({ default: m.ClientSupportPage })));
 const ClientTimelinePage = lazy(() => import("./pages/client/ClientPages").then((m) => ({ default: m.ClientTimelinePage })));
+const DeveloperDashboardPage = lazy(() => import("./pages/developer/DeveloperPages").then((m) => ({ default: m.DeveloperDashboardPage })));
+const DeveloperProjectsPage = lazy(() => import("./pages/developer/DeveloperPages").then((m) => ({ default: m.DeveloperProjectsPage })));
+const DeveloperSettingsPage = lazy(() => import("./pages/developer/DeveloperPages").then((m) => ({ default: m.DeveloperSettingsPage })));
 const LoginPage = lazy(() => import("./pages/auth/AuthPages").then((m) => ({ default: m.LoginPage })));
 const ForgotPasswordPage = lazy(() => import("./pages/auth/AuthPages").then((m) => ({ default: m.ForgotPasswordPage })));
 const SetPasswordPage = lazy(() => import("./pages/auth/AuthPages").then((m) => ({ default: m.SetPasswordPage })));
@@ -171,6 +175,17 @@ function AppRoutes() {
           <Route path="invoices" element={<ClientBillingPage />} />
           <Route path="support" element={<ClientSupportPage />} />
           <Route path="profile" element={<ClientSettingsPage />} />
+        </Route>
+      </Route>
+
+      {/* Developer Portal */}
+      <Route element={<ProtectedRoute role="developer" />}>
+        <Route path="/developer" element={<DeveloperLayout />}>
+          <Route index element={<DeveloperDashboardPage />} />
+          <Route path="projects" element={<DeveloperProjectsPage />} />
+          <Route path="meetings" element={<DeveloperDashboardPage />} />
+          <Route path="documents" element={<DeveloperDashboardPage />} />
+          <Route path="profile" element={<DeveloperSettingsPage />} />
         </Route>
       </Route>
 

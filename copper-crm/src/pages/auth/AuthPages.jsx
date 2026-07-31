@@ -7,11 +7,6 @@ import {
 import { useAuth } from "../../auth/useAuth";
 import { isEmail } from "../../lib/validators";
 
-const roleOptions = [
-  { value: "user", label: "User", description: "Client portal access" },
-  { value: "superadmin", label: "SuperAdmin", description: "CRM control center" }
-];
-
 function AuthShell({ children, title, subtitle }) {
   return (
     <div className="min-h-screen bg-[#f0ede4] text-[#211a17] grid lg:grid-cols-[1.05fr_0.95fr]">
@@ -55,28 +50,6 @@ function AuthShell({ children, title, subtitle }) {
           {children}
         </div>
       </main>
-    </div>
-  );
-}
-
-function RolePicker({ value, onChange }) {
-  return (
-    <div className="grid grid-cols-2 gap-2">
-      {roleOptions.map((role) => (
-        <button
-          key={role.value}
-          type="button"
-          onClick={() => onChange(role.value)}
-          className={`rounded-xl border p-3 text-left transition-all ${
-            value === role.value
-              ? "border-[#8D3118] bg-[#fff1ec] text-[#9A4113]"
-              : "border-[#d8c2b9] bg-white text-[#6c6355] hover:border-[#E7A98C]"
-          }`}
-        >
-          <p className="text-sm font-bold">{role.label}</p>
-          <p className="mt-1 text-[11px]">{role.description}</p>
-        </button>
-      ))}
     </div>
   );
 }
@@ -131,14 +104,13 @@ export function LoginPage() {
   const auth = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [role, setRole] = useState("user");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   if (auth.isAuthenticated) {
-    const fallback = auth.user?.role === "superadmin" ? "/admin" : "/client";
+    const fallback = auth.user?.role === "superadmin" ? "/admin" : auth.user?.role === "developer" ? "/developer" : "/client";
     return <Navigate to={location.state?.from?.pathname || fallback} replace />;
   }
 
@@ -155,8 +127,8 @@ export function LoginPage() {
     }
     setLoading(true);
     try {
-      const session = await auth.login({ email, password, role });
-      const fallback = session.user.role === "superadmin" ? "/admin" : "/client";
+      const session = await auth.login({ email, password });
+      const fallback = session.user.role === "superadmin" ? "/admin" : session.user.role === "developer" ? "/developer" : "/client";
       navigate(location.state?.from?.pathname || fallback, { replace: true });
     } catch (err) {
       setError(err.message);
@@ -166,9 +138,8 @@ export function LoginPage() {
   }
 
   return (
-    <AuthShell title="Log in to CRM" subtitle="Choose your role and sign in to continue.">
+    <AuthShell title="Log in to CRM" subtitle="Sign in with your email and password to continue.">
       <form onSubmit={handleSubmit} className="space-y-4">
-        <RolePicker value={role} onChange={setRole} />
         <Field icon={Mail} label="Email address" value={email} onChange={setEmail} placeholder="you@company.com" autoComplete="email" />
         <Field icon={KeyRound} type="password" label="Password" value={password} onChange={setPassword} placeholder="Enter password" autoComplete="current-password" />
         <div className="flex items-center justify-between text-xs">
@@ -184,7 +155,6 @@ export function LoginPage() {
 
 export function ForgotPasswordPage() {
   const auth = useAuth();
-  const [role, setRole] = useState("user");
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
   const [password, setPassword] = useState("");
@@ -204,7 +174,7 @@ export function ForgotPasswordPage() {
     }
     setLoading(true);
     try {
-      const data = await auth.forgotPassword({ email, role });
+      const data = await auth.forgotPassword({ email });
       setOtpSent(true);
       setMessage(data.message);
     } catch (err) {
@@ -227,8 +197,9 @@ export function ForgotPasswordPage() {
     }
     setLoading(true);
     try {
-      const session = await auth.resetPassword({ email, role, otp, password });
-      navigate(session.user.role === "superadmin" ? "/admin" : "/client", { replace: true });
+      const session = await auth.resetPassword({ email, otp, password });
+      const fallback = session.user.role === "superadmin" ? "/admin" : session.user.role === "developer" ? "/developer" : "/client";
+      navigate(fallback, { replace: true });
     } catch (err) {
       setError(err.message);
     } finally {
@@ -239,7 +210,6 @@ export function ForgotPasswordPage() {
   return (
     <AuthShell title="Reset password" subtitle="Request an OTP on email, then create a new password.">
       <form onSubmit={otpSent ? resetPassword : sendOtp} className="space-y-4">
-        <RolePicker value={role} onChange={setRole} />
         <Field icon={Mail} label="Email address" value={email} onChange={setEmail} placeholder="you@company.com" autoComplete="email" />
         {otpSent && (
           <>

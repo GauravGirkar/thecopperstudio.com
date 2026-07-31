@@ -57,12 +57,12 @@ function sha256(value) {
 
 router.post("/login", async (req, res, next) => {
   try {
-    const { email, password, role } = req.body;
-    if (!email || !password || !role) {
-      return res.status(400).json({ message: "Email, password, and role are required." });
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ message: "Email and password are required." });
     }
 
-    const user = await User.findOne({ email: String(email).toLowerCase(), role });
+    const user = await User.findOne({ email: String(email).toLowerCase() });
     if (!user || !user.passwordHash || user.status === "disabled") {
       return res.status(401).json({ message: "Invalid credentials." });
     }
@@ -119,8 +119,8 @@ router.post("/set-password", async (req, res, next) => {
 
 router.post("/forgot-password", async (req, res, next) => {
   try {
-    const { email, role } = req.body;
-    const user = await User.findOne({ email: String(email || "").toLowerCase(), role });
+    const { email } = req.body;
+    const user = await User.findOne({ email: String(email || "").toLowerCase() });
 
     if (user && user.status !== "disabled") {
       const otp = String(crypto.randomInt(100000, 999999));
@@ -140,14 +140,13 @@ router.post("/forgot-password", async (req, res, next) => {
 
 router.post("/reset-password", async (req, res, next) => {
   try {
-    const { email, role, otp, password } = req.body;
-    if (!email || !role || !otp || !password || password.length < 8) {
-      return res.status(400).json({ message: "Email, role, OTP, and 8+ character password are required." });
+    const { email, otp, password } = req.body;
+    if (!email || !otp || !password || password.length < 8) {
+      return res.status(400).json({ message: "Email, OTP, and 8+ character password are required." });
     }
 
     const user = await User.findOne({
       email: String(email).toLowerCase(),
-      role,
       "resetPassword.otpHash": sha256(otp),
       "resetPassword.expiresAt": { $gt: new Date() }
     });

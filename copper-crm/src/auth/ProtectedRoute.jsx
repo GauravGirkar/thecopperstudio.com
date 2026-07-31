@@ -11,7 +11,7 @@ export default function ProtectedRoute({ role }) {
   }
 
   if (role && auth.user?.role !== role) {
-    const target = auth.user?.role === "superadmin" ? "/admin" : "/client";
+    const target = auth.user?.role === "superadmin" ? "/admin" : auth.user?.role === "developer" ? "/developer" : "/client";
     return <Navigate to={target} replace />;
   }
 
